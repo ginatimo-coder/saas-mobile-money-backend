@@ -1,0 +1,108 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+
+// Énumérations pour typer proprement les statuts et types de transaction
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum TransactionType {
+  DEPOSIT = 'DEPOSIT',       // Dépôt / Cash-in
+  WITHDRAWAL = 'WITHDRAWAL', // Retrait / Cash-out
+  TRANSFER = 'TRANSFER',     // Transfert entre utilisateurs (P2P)
+  PAYMENT = 'PAYMENT',       // Paiement marchand / C2B
+}
+
+// Transformateur pour manipuler les montants en tant que 'number' et non 'string'
+class ColumnNumericTransformer {
+  to(data: number): number {
+    return data;
+  }
+  from(data: string): number {
+    return parseFloat(data);
+  }
+}
+
+@Entity('transactions')
+export class Transaction {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  // Référence unique générée par votre système
+  @Column({ unique: true })
+  @Index()
+  reference: string;
+
+  // Référence renvoyée par le provider Mobile Money (ex: M-Pesa ID / CheckoutRequestID)
+  @Column({ nullable: true })
+  @Index()
+  providerReference: string;
+
+  // Numéro de téléphone Mobile Money associé à l'opération
+  @Column()
+  phoneNumber: string;
+
+  // Montant brut de la transaction
+  @Column('numeric', {
+    precision: 12,
+    scale: 2,
+    transformer: new ColumnNumericTransformer(),
+  })
+  amount: number;
+
+  // Frais prélevés sur la transaction
+  @Column('numeric', {
+    precision: 12,
+    scale: 2,
+    default: 0.0,
+    transformer: new ColumnNumericTransformer(),
+  })
+  fee: number;
+
+  // Devise (ex: USD, CDF, KES, XOF)
+  @Column({ length: 5, default: 'USD' })
+  currency: string;
+
+  @Column({
+    type: 'enum',
+    enum: TransactionType,
+  })
+  type: TransactionType;
+
+  @Column({
+    type: 'enum',
+    enum: TransactionStatus,
+    default: TransactionStatus.PENDING,
+  })
+  status: TransactionStatus;
+
+  // Données de réponse brutes des webhooks (pratique pour le débogage)
+  @Column('jsonb', { nullable: true })
+  metadata: Record<string, any>;
+
+  // Relation avec l'utilisateur déclencheur
+  @ManyToOne(() => User, (user) => user.transactions, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @Column({ nullable: true })
+  userId: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
