@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { Transaction } from './entities/transaction.entity';
+import { Transaction, TransactionStatus } from './entities/transaction.entity';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -30,6 +30,27 @@ export class TransactionsController {
       body.phoneNumber,
       body.currency,
     );
+  }
+
+  // Recevoir la notification de l'opérateur Mobile Money (Webhook)
+  @Post('webhook/callback')
+  async handleWebhook(
+    @Body() body: { reference: string; status: 'SUCCESS' | 'FAILED'; providerReference: string },
+  ) {
+    const mappedStatus =
+      body.status === 'SUCCESS' ? TransactionStatus.SUCCESS : TransactionStatus.FAILED;
+
+    const updatedTransaction = await this.transactionsService.handleProviderWebhook(
+      body.reference,
+      mappedStatus,
+      body.providerReference,
+    );
+
+    return {
+      received: true,
+      message: 'Webhook traité avec succès',
+      transaction: updatedTransaction,
+    };
   }
 
   // Consulter l'historique des transactions d'un utilisateur
