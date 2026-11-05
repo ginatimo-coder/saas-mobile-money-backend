@@ -1,49 +1,58 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { Transaction, TransactionStatus } from './entities/transaction.entity';
+import { Transaction } from './entities/transaction.entity';
+import { CreateDepositDto, CreateWithdrawalDto, HandleWebhookDto } from './dto/create-transaction.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('transactions')
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
-  // Effectuer un dépôt (Cash-in)
+  // Effectuer un dépôt (Protégé par JWT)
   @Post('deposit')
-  async deposit(
-    @Body() body: { userId: string; amount: number; phoneNumber: string; currency?: string },
-  ): Promise<Transaction> {
+  @UseGuards(AuthGuard('jwt'))
+  async deposit(@Req() req, @Body() createDepositDto: CreateDepositDto): Promise<Transaction> {
+    // On récupère le userId directement du token décodé (req.user) pour plus de sécurité
+    const userId = req.user.userId;
+
     return await this.transactionsService.createDeposit(
-      body.userId,
-      body.amount,
-      body.phoneNumber,
-      body.currency,
+      userId,
+      createDepositDto.amount,
+      createDepositDto.phoneNumber,
+      createDepositDto.currency,
     );
   }
 
-  // Effectuer un retrait (Cash-out)
+  // Effectuer un retrait (Protégé par JWT)
   @Post('withdrawal')
-  async withdrawal(
-    @Body() body: { userId: string; amount: number; phoneNumber: string; currency?: string },
-  ): Promise<Transaction> {
+  @UseGuards(AuthGuard('jwt'))
+  async withdrawal(@Req() req, @Body() createWithdrawalDto: CreateWithdrawalDto): Promise<Transaction> {
+    const userId = req.user.userId;
+
     return await this.transactionsService.createWithdrawal(
-      body.userId,
-      body.amount,
-      body.phoneNumber,
-      body.currency,
+      userId,
+      createWithdrawalDto.amount,
+      createWithdrawalDto.phoneNumber,
+      createWithdrawalDto.currency,
     );
   }
 
-  // Recevoir la notification de l'opérateur Mobile Money (Webhook)
-  @Post('webhook/callback')
-  async handleWebhook(
-    @Body() body: { reference: string; status: 'SUCCESS' | 'FAILED'; providerReference: string },
-  ) {
-    const mappedStatus =
-      body.status === 'SUCCESS' ? TransactionStatus.SUCCESS : TransactionStatus.FAILED;
+  // Consulter l'historique des transactions de l'utilisateur connecté
+  @Get('my-history')
+  @UseGuards(AuthGuard('jwt'))
+  async getMyTransactions(@Req() req): Promise<Transaction[]> {
+    const userId = req.user.userId;
+    return await this.transactionsService.findAllByUserId(userId);
+  }
 
+  // ⚠️ IMPORTANT : Le webhook du provider RESTE PUBLIC (pas de @UseGuards) 
+  // car c'est l'opérateur externe (M-Pesa) qui appelle votre serveur, pas un utilisateur connecté.
+  @Post('webhook/callback')
+  async handleWebhook(@Body() handleWebhookDto: HandleWebhookDto) {
     const updatedTransaction = await this.transactionsService.handleProviderWebhook(
-      body.reference,
-      mappedStatus,
-      body.providerReference,
+      handleWebhookDto.reference,
+      handleWebhookDto.status,
+      handleWebhookDto.providerReference,
     );
 
     return {
@@ -51,11 +60,5 @@ export class TransactionsController {
       message: 'Webhook traité avec succès',
       transaction: updatedTransaction,
     };
-  }
-
-  // Consulter l'historique des transactions d'un utilisateur
-  @Get('user/:userId')
-  async getUserTransactions(@Param('userId') userId: string): Promise<Transaction[]> {
-    return await this.transactionsService.findAllByUserId(userId);
   }
 }
