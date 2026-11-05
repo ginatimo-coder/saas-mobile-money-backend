@@ -29,7 +29,6 @@ export class TransactionsService {
     await queryRunner.startTransaction();
 
     try {
-      // Créer l'enregistrement de la transaction avec le statut PENDING
       const transaction = this.transactionRepository.create({
         reference: `DEP-${uuidv4().substring(0, 8).toUpperCase()}`,
         phoneNumber,
@@ -45,7 +44,6 @@ export class TransactionsService {
       // Créditer le portefeuille de l'utilisateur
       await this.walletsService.creditWallet(userId, amount);
 
-      // Mettre à jour le statut en SUCCESS
       savedTransaction.status = TransactionStatus.SUCCESS;
       await queryRunner.manager.save(savedTransaction);
 
@@ -70,7 +68,7 @@ export class TransactionsService {
     await queryRunner.startTransaction();
 
     try {
-      // Débiter d'abord le portefeuille (vérifie automatiquement le solde suffisant)
+      // Débiter d'abord le portefeuille (vérifie automatiquement le solde)
       await this.walletsService.debitWallet(userId, amount);
 
       const transaction = this.transactionRepository.create({
@@ -79,7 +77,7 @@ export class TransactionsService {
         amount,
         currency,
         type: TransactionType.WITHDRAWAL,
-        status: TransactionStatus.SUCCESS, // ou PENDING selon l'attente du webhook du provider
+        status: TransactionStatus.SUCCESS,
         userId,
       });
 
@@ -95,9 +93,45 @@ export class TransactionsService {
     }
   }
 
-  // 3. Récupérer l'historique des transactions d'un utilisateur
+  // 3. Traiter la notification d'un Webhook (Callback du provider Mobile Money)
+  async handleProviderWebhook(reference: string, status: TransactionStatus, providerReference: string): Promise<Transaction> {
+    const transaction = await this.transactionRepository.findOne({ where: { reference } });
+    
+    if (!transaction) {
+      throw new NotFoundException(`Transaction avec la référence ${reference} introuvable.`);
+    }
+
+    if (transaction.status === TransactionStatus.SUCCESS) {
+      return transaction; // Déjà traitée
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      transaction.providerReference = providerReference;
+      transaction.status = status;
+
+      if (status === TransactionStatus.SUCCESS && transaction.type === TransactionType.DEPOSIT) {
+        await this.walletsService.creditWallet(transaction.userId, transaction.amount);
+      }
+
+      const updatedTransaction = await queryRunner.manager.save(transaction);
+      await queryRunner.commitTransaction();
+      
+      return updatedTransaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(`Erreur lors du traitement du webhook : ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 4. Récupérer l'historique des transactions d'un utilisateur
   async findAllByUserId(userId: string): Promise<Transaction[]> {
-    return await.transactionRepository.find({
+    return await this.transactionRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
