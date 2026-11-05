@@ -1,0 +1,59 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  OneToOne,
+  Index,
+} from 'typeorm';
+import { Transaction } from '../../transactions/entities/transaction.entity';
+import { Wallet } from '../../wallets/entities/wallet.entity';
+
+export enum UserRole {
+  CLIENT = 'CLIENT',
+  MERCHANT = 'MERCHANT',
+  ADMIN = 'ADMIN',
+}
+
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  // Numéro de téléphone unique (clé d'identification principale en Mobile Money)
+  @Column({ unique: true })
+  @Index()
+  phoneNumber: string;
+
+  @Column({ unique: true, nullable: true })
+  email: string;
+
+  @Column({ select: false }) // Masqué par défaut lors des requêtes find() pour la sécurité
+  passwordHash: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.CLIENT,
+  })
+  role: UserRole;
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  // Relation avec les transactions de l'utilisateur
+  @OneToMany(() => Transaction, (transaction) => transaction.user)
+  transactions: Transaction[];
+
+  // Relation avec le portefeuille de l'utilisateur
+  @OneToOne(() => Wallet, (wallet) => wallet.user, { cascade: true })
+  wallet: Wallet;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
