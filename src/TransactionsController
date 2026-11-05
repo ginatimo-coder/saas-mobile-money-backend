@@ -1,0 +1,40 @@
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { TransactionsService } from './transactions.service';
+import { Transaction } from './entities/transaction.entity';
+
+@Controller('transactions')
+export class TransactionsController {
+  constructor(private readonly transactionsService: TransactionsService) {}
+
+  // Effectuer un dépôt (Cash-in)
+  @Post('deposit')
+  async deposit(
+    @Body() body: { userId: string; amount: number; phoneNumber: string; currency?: string },
+  ): Promise<Transaction> {
+    return await this.transactionsService.createDeposit(
+      body.userId,
+      body.amount,
+      body.phoneNumber,
+      body.currency,
+    );
+  }
+
+  // Effectuer un retrait (Cash-out)
+  @Post('withdrawal')
+  async withdrawal(
+    @Body() body: { userId: string; amount: number; phoneNumber: string; currency?: string },
+  ): Promise<Transaction> {
+    return await this.transactionsService.createWithdrawal(
+      body.userId,
+      body.amount,
+      body.phoneNumber,
+      body.currency,
+    );
+  }
+
+  // Consulter l'historique des transactions d'un utilisateur
+  @Get('user/:userId')
+  async getUserTransactions(@Param('userId') userId: string): Promise<Transaction[]> {
+    return await this.transactionsService.findAllByUserId(userId);
+  }
+}
