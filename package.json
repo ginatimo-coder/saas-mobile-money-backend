@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "Backend NestJS pour SaaS Mobile Money",
   "private": true,
-  "scripts": {
-    "build": "nest build",
+"scripts": {
+    "build": "npx tsc",
     "start": "node dist/main",
     "start:prod": "node dist/main"
   },
