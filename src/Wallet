@@ -1,0 +1,59 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+
+// Transformateur pour manipuler les montants en tant que 'number' et non 'string'
+class ColumnNumericTransformer {
+  to(data: number): number {
+    return data;
+  }
+  from(data: string): number {
+    return parseFloat(data);
+  }
+}
+
+@Entity('wallets')
+export class Wallet {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  // Solde actuel du portefeuille
+  @Column('numeric', {
+    precision: 12,
+    scale: 2,
+    default: 0.0,
+    transformer: new ColumnNumericTransformer(),
+  })
+  balance: number;
+
+  // Devise du portefeuille (ex: USD, CDF, KES, XOF)
+  @Column({ length: 5, default: 'USD' })
+  currency: string;
+
+  // Indique si le portefeuille est actif ou gelé (sécurité / fraude)
+  @Column({ default: true })
+  isActive: boolean;
+
+  // Relation OneToOne avec l'entité User
+  @OneToOne(() => User, (user) => user.wallet, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @Column()
+  @Index()
+  userId: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
