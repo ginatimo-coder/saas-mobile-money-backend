@@ -1,0 +1,9 @@
+### Inscription d'un nouvel utilisateur Mobile Money
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+  "phoneNumber": "+2250700000044",
+  "fullName": "Jean Kouadio",
+  "pinCode": "1234"
+}

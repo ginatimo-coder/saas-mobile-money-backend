@@ -1,0 +1,51 @@
+### 1. Inscription Utilisateur 1 (Expéditeur)
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+  "phoneNumber": "+243820000001",
+  "fullName": "Jean Kabeya",
+  "pinCode": "1234"
+}
+
+### 2. Inscription Utilisateur 2 (Destinataire / Marie Mwamba)
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+  "phoneNumber": "+243810000002",
+  "fullName": "Marie Mwamba",
+  "pinCode": "1234"
+}
+
+### 3. Connexion Utilisateur 1 (Pour récupérer l'accessToken JWT)
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "+243820000001",
+  "pinCode": "1234"
+}
+
+### 4. Dépôt de 100 000 CDF sur le compte de l'Utilisateur 1
+POST http://localhost:3000/users/cbc5f5c8-3657-4cea-9fe9-b24de17412d9/wallet/deposit
+Content-Type: application/json
+
+{
+  "amount": 100000,
+  "currency": "CDF"
+}
+
+### 5. Transférer 25 000 CDF vers Marie Mwamba (+243810000002)
+POST http://localhost:3000/users/cbc5f5c8-3657-4cea-9fe9-b24de17412d9/wallet/transfer
+Content-Type: application/json
+
+{
+  "recipientPhone": "+243810000002",
+  "amount": 25000,
+  "currency": "CDF"
+}
+
+### 6. Consulter l'historique des transactions (Route protégée par JWT)
+GET http://localhost:3000/users/cbc5f5c8-3657-4cea-9fe9-b24de17412d9/transactions
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZjUxNmZkYS1jZjkzLTQ3OGItYjdlZi02Mjg1NmI3ZWNlMzYiLCJwaG9uZU51bWJlciI6IisyNDM4MjAwMDAwMDEiLCJpYXQiOjE3OTM5NzM3MDcsImV4cCI6MTc5NDA2MDEwN30.X8RZbQSjeqJ8ls7ALLB6Lwx5ylwT-8yJ90naxRYvR_s
