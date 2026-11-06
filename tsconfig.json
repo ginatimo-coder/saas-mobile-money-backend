@@ -1,15 +1,20 @@
 {
   "compilerOptions": {
+<<<<<<< HEAD
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
+=======
+    "module": "commonjs",
+>>>>>>> f53be801812e677f221d1bae063d2bc525236fbf
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+<<<<<<< HEAD
     "target": "ES2023",
     "types": ["node", "jest"],
     "sourceMap": true,
@@ -19,5 +24,18 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false
+=======
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false
+>>>>>>> f53be801812e677f221d1bae063d2bc525236fbf
   }
 }

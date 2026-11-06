@@ -1,0 +1,82 @@
+import { Injectable, UnauthorizedException, BadRequestConflictException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User, UserRole } from '../users/entities/user.entity';
+import { Wallet } from '../wallets/entities/wallet.entity';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Wallet)
+    private readonly walletRepository: Repository<Wallet>,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  // 1. Inscription d'un nouvel utilisateur + création automatique de son portefeuille
+  async register(phoneNumber: string, password: string, email?: string, role: UserRole = UserRole.CLIENT) {
+    const existingUser = await this.userRepository.findOne({ where: { phoneNumber } });
+    if (existingUser) {
+      throw new BadRequestException('Un compte existe déjà avec ce numéro de téléphone.');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const user = this.userRepository.create({
+      phoneNumber,
+      email,
+      passwordHash,
+      role,
+    });
+
+    const savedUser = await this.userRepository.save(user);
+
+    // Création automatique du portefeuille associé à l'utilisateur
+    const wallet = this.walletRepository.create({
+      userId: savedUser.id,
+      balance: 0.0,
+      currency: 'USD',
+    });
+    await this.walletRepository.save(wallet);
+
+    return {
+      message: 'Inscription réussie avec succès',
+      userId: savedUser.id,
+      phoneNumber: savedUser.phoneNumber,
+    };
+  }
+
+  // 2. Connexion d'un utilisateur
+  async login(phoneNumber: string, pass: string) {
+    // On doit explicitement demander `passwordHash` car il est masqué par défaut (select: false)
+    const user = await this.userRepository.findOne({
+      where: { phoneNumber },
+      select: ['id', 'phoneNumber', 'role', 'passwordHash', 'isActive'],
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Identifiants invalides ou compte désactivé.');
+    }
+
+    const isPasswordValid = await bcrypt.compare(pass, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Identifiants invalides.');
+    }
+
+    const payload = { sub: user.id, phoneNumber: user.phoneNumber, role: user.role };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      access_token: accessToken,
+      user: {
+        id: user.id,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+      },
+    };
+  }
+}

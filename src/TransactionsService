@@ -1,0 +1,139 @@
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
+import { WalletsService } from '../wallets/wallets.service';
+import { v4 as uuidv4 } from 'uuid';
+
+@Injectable()
+export class TransactionsService {
+  constructor(
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+    private readonly walletsService: WalletsService,
+    private readonly dataSource: DataSource,
+  ) {}
+
+  // 1. Initier un Dépôt (Cash-in)
+  async createDeposit(userId: string, amount: number, phoneNumber: string, currency: string = 'USD'): Promise<Transaction> {
+    if (amount <= 0) {
+      throw new BadRequestException('Le montant du dépôt doit être supérieur à zéro.');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const transaction = this.transactionRepository.create({
+        reference: `DEP-${uuidv4().substring(0, 8).toUpperCase()}`,
+        phoneNumber,
+        amount,
+        currency,
+        type: TransactionType.DEPOSIT,
+        status: TransactionStatus.PENDING,
+        userId,
+      });
+
+      const savedTransaction = await queryRunner.manager.save(transaction);
+
+      // Créditer le portefeuille de l'utilisateur
+      await this.walletsService.creditWallet(userId, amount);
+
+      savedTransaction.status = TransactionStatus.SUCCESS;
+      await queryRunner.manager.save(savedTransaction);
+
+      await queryRunner.commitTransaction();
+      return savedTransaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(`Échec du dépôt : ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 2. Initier un Retrait (Cash-out)
+  async createWithdrawal(userId: string, amount: number, phoneNumber: string, currency: string = 'USD'): Promise<Transaction> {
+    if (amount <= 0) {
+      throw new BadRequestException('Le montant du retrait doit être supérieur à zéro.');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Débiter d'abord le portefeuille (vérifie automatiquement le solde)
+      await this.walletsService.debitWallet(userId, amount);
+
+      const transaction = this.transactionRepository.create({
+        reference: `WDR-${uuidv4().substring(0, 8).toUpperCase()}`,
+        phoneNumber,
+        amount,
+        currency,
+        type: TransactionType.WITHDRAWAL,
+        status: TransactionStatus.SUCCESS,
+        userId,
+      });
+
+      const savedTransaction = await queryRunner.manager.save(transaction);
+
+      await queryRunner.commitTransaction();
+      return savedTransaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(`Échec du retrait : ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 3. Traiter la notification d'un Webhook (Callback du provider Mobile Money)
+  async handleProviderWebhook(reference: string, status: TransactionStatus, providerReference: string): Promise<Transaction> {
+    const transaction = await this.transactionRepository.findOne({ where: { reference } });
+    
+    if (!transaction) {
+      throw new NotFoundException(`Transaction avec la référence ${reference} introuvable.`);
+    }
+
+    if (transaction.status === TransactionStatus.SUCCESS) {
+      return transaction; // Déjà traitée
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      transaction.providerReference = providerReference;
+      transaction.status = status;
+
+      if (status === TransactionStatus.SUCCESS && transaction.type === TransactionType.DEPOSIT) {
+        await this.walletsService.creditWallet(transaction.userId, transaction.amount);
+      }
+
+      const updatedTransaction = await queryRunner.manager.save(transaction);
+      await queryRunner.commitTransaction();
+      
+      return updatedTransaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(`Erreur lors du traitement du webhook : ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 4. Récupérer l'historique des transactions d'un utilisateur
+  async findAllByUserId(userId: string): Promise<Transaction[]> {
+    return await this.transactionRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+}

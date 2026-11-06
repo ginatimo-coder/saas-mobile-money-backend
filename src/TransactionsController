@@ -1,0 +1,64 @@
+import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { TransactionsService } from './transactions.service';
+import { Transaction } from './entities/transaction.entity';
+import { CreateDepositDto, CreateWithdrawalDto, HandleWebhookDto } from './dto/create-transaction.dto';
+import { AuthGuard } from '@nestjs/passport';
+
+@Controller('transactions')
+export class TransactionsController {
+  constructor(private readonly transactionsService: TransactionsService) {}
+
+  // Effectuer un dépôt (Protégé par JWT)
+  @Post('deposit')
+  @UseGuards(AuthGuard('jwt'))
+  async deposit(@Req() req, @Body() createDepositDto: CreateDepositDto): Promise<Transaction> {
+    // On récupère le userId directement du token décodé (req.user) pour plus de sécurité
+    const userId = req.user.userId;
+
+    return await this.transactionsService.createDeposit(
+      userId,
+      createDepositDto.amount,
+      createDepositDto.phoneNumber,
+      createDepositDto.currency,
+    );
+  }
+
+  // Effectuer un retrait (Protégé par JWT)
+  @Post('withdrawal')
+  @UseGuards(AuthGuard('jwt'))
+  async withdrawal(@Req() req, @Body() createWithdrawalDto: CreateWithdrawalDto): Promise<Transaction> {
+    const userId = req.user.userId;
+
+    return await this.transactionsService.createWithdrawal(
+      userId,
+      createWithdrawalDto.amount,
+      createWithdrawalDto.phoneNumber,
+      createWithdrawalDto.currency,
+    );
+  }
+
+  // Consulter l'historique des transactions de l'utilisateur connecté
+  @Get('my-history')
+  @UseGuards(AuthGuard('jwt'))
+  async getMyTransactions(@Req() req): Promise<Transaction[]> {
+    const userId = req.user.userId;
+    return await this.transactionsService.findAllByUserId(userId);
+  }
+
+  // ⚠️ IMPORTANT : Le webhook du provider RESTE PUBLIC (pas de @UseGuards) 
+  // car c'est l'opérateur externe (M-Pesa) qui appelle votre serveur, pas un utilisateur connecté.
+  @Post('webhook/callback')
+  async handleWebhook(@Body() handleWebhookDto: HandleWebhookDto) {
+    const updatedTransaction = await this.transactionsService.handleProviderWebhook(
+      handleWebhookDto.reference,
+      handleWebhookDto.status,
+      handleWebhookDto.providerReference,
+    );
+
+    return {
+      received: true,
+      message: 'Webhook traité avec succès',
+      transaction: updatedTransaction,
+    };
+  }
+}
