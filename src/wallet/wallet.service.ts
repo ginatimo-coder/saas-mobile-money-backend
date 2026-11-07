@@ -1,15 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Wallet } from './wallet.entity';
 
 @Injectable()
 export class WalletService {
-  constructor(
-    // 💡 Injection explicite par chaîne de caractères pour contourner le problème du undefined en production
-    @InjectRepository(Wallet)
-    private readonly walletRepository: Repository<Wallet>,
-  ) {}
+  private walletRepository: Repository<Wallet>;
+
+  constructor(private readonly dataSource: DataSource) {
+    // Récupération directe et sécurisée du repository via DataSource (zéro décorateur, zéro undefined)
+    this.walletRepository = this.dataSource.getRepository(Wallet);
+  }
 
   async createWallet(): Promise<Wallet> {
     const wallet = this.walletRepository.create({
