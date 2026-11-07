@@ -12,7 +12,7 @@ export class TransactionsService {
 
   async create(createTransactionDto: any): Promise<Transaction> {
     const transaction = this.transactionRepository.create(createTransactionDto);
-    return await this.transactionRepository.save(transaction as Transaction);
+    return await this.transactionRepository.save(transaction);
   }
 
   async findAll(): Promise<Transaction[]> {
