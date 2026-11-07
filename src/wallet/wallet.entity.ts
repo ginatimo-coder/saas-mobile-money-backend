@@ -1,19 +1,33 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource, Repository } from 'typeorm';
+import { Wallet } from './wallet.entity';
 
-@Entity('wallets')
-export class Wallet {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+@Injectable()
+export class WalletService {
+  private walletRepository: Repository<Wallet>;
 
-  @Column('decimal', { precision: 12, scale: 2, default: 0 })
-  balance: number;
+  constructor(private readonly dataSource: DataSource) {
+    // Récupération sécurisée du repository via le DataSource (immunisé contre les 'undefined')
+    this.walletRepository = this.dataSource.getRepository(Wallet);
+  }
 
-  @Column({ default: 'CDF' })
-  currency: string;
+  async createWallet(): Promise<Wallet> {
+    const wallet = this.walletRepository.create({
+      balance: 0,
+      currency: 'CDF',
+    });
+    return await this.walletRepository.save(wallet);
+  }
 
-  @OneToMany('Transaction', (transaction: any) => transaction.wallet)
-  transactions: any[];
+  async findOne(id: string): Promise<Wallet> {
+    const wallet = await this.walletRepository.findOne({ where: { id } });
+    if (!wallet) {
+      throw new NotFoundException("Portefeuille introuvable.");
+    }
+    return wallet;
+  }
 
-  @CreateDateColumn()
-  createdAt: Date;
+  async findAll(): Promise<Wallet[]> {
+    return await this.walletRepository.find();
+  }
 }
