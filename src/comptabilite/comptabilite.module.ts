@@ -1,12 +1,15 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ComptabiliteEntry } from './comptabilite.entity';
 import { ComptabiliteController } from './comptabilite.controller';
 import { ComptabiliteService } from './comptabilite.service';
-// Adaptez le nom de l'entité selon votre fichier existant dans le dossier
-// import { CompteEntity } from './...';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([])],
+  imports: [
+    TypeOrmModule.forFeature([ComptabiliteEntry]),
+    forwardRef(() => TransactionsModule),
+  ],
   controllers: [ComptabiliteController],
   providers: [ComptabiliteService],
   exports: [ComptabiliteService],
