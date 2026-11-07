@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Transaction } from '../transactions/transaction.entity';
 
 @Entity('comptabilite_entries')
 export class ComptabiliteEntry {
@@ -14,9 +15,9 @@ export class ComptabiliteEntry {
   @Column({ default: 'CDF' })
   currency: string;
 
-  @ManyToOne('Transaction', { onDelete: 'CASCADE' })
+  @ManyToOne(() => Transaction, { onDelete: 'CASCADE' })
   @JoinColumn()
-  transaction: any;
+  transaction: Transaction;
 
   @CreateDateColumn()
   createdAt: Date;
