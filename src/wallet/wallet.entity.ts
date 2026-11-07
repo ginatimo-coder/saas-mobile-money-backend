@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
-import { Transaction } from '../transactions/transaction.entity';
 
 @Entity('wallets')
 export class Wallet {
@@ -12,8 +11,8 @@ export class Wallet {
   @Column({ default: 'CDF' })
   currency: string;
 
-  @OneToMany(() => Transaction, (transaction) => transaction.wallet)
-  transactions: Transaction[];
+  @OneToMany('Transaction', (transaction: any) => transaction.wallet)
+  transactions: any[];
 
   @CreateDateColumn()
   createdAt: Date;
