@@ -6,7 +6,7 @@ export class ComptabiliteController {
   constructor(private readonly comptabiliteService: ComptabiliteService) {}
 
   @Get()
-  getData() {
-    return this.comptabiliteService.getData();
+  async findAll() {
+    return await this.comptabiliteService.findAllEntries();
   }
 }
