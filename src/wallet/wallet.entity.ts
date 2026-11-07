@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 
 @Entity('wallets')
 export class Wallet {
@@ -8,12 +8,13 @@ export class Wallet {
   @Column('decimal', { precision: 12, scale: 2, default: 0 })
   balance: number;
 
-  @Column({ default: 'CDF' }) // <-- Remis correctement sur CDF
+  @Column({ default: 'CDF' })
   currency: string;
+
+  // Utilisation d'une chaîne de caractères pour éviter l'import circulaire
+  @OneToMany('Transaction', (transaction: any) => transaction.wallet)
+  transactions: any[];
 
   @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }

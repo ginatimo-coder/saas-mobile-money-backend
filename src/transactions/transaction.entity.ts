@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne } from 'typeorm';
-import { Wallet } from '../wallet/wallet.entity';
 
 export enum TransactionType {
   DEPOSIT = 'DEPOSIT',
@@ -18,10 +17,11 @@ export class Transaction {
   type: TransactionType;
 
   @Column({ default: 'SUCCESS' })
-  status: string; // <-- Assurez-vous que cette ligne est présente
+  status: string;
 
-  @ManyToOne(() => Wallet, { onDelete: 'CASCADE' })
-  wallet: Wallet; // <-- Assurez-vous que cette relation est présente
+  // Utilisation d'une chaîne de caractères 'Wallet'
+  @ManyToOne('Wallet', (wallet: any) => wallet.transactions, { onDelete: 'CASCADE' })
+  wallet: any;
 
   @CreateDateColumn()
   createdAt: Date;
