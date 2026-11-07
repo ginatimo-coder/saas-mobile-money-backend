@@ -12,13 +12,17 @@ import { join } from 'path';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      // Chargement dynamique par chemin : élimine définitivement les erreurs 'undefined'
+      // Chargement dynamique des entités
       entities: [join(__dirname, '**/*.entity{.ts,.js}')],
       synchronize: true,
     }),
+    
+    // 1. On garde uniquement le WalletModule pour le test
     WalletModule,
-    TransactionsModule,
-    ComptabiliteModule,
+
+    // 2. Les deux autres modules sont désactivés pour isoler l'erreur
+    // TransactionsModule,
+    // ComptabiliteModule,
   ],
   controllers: [AppController],
   providers: [AppService],
