@@ -20,8 +20,4 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [AppService],
 })
-<<<<<<< HEAD
 export class AppModule {}
-=======
-export class AppModule {}
->>>>>>> f53be801812e677f221d1bae063d2bc525236fbf
