@@ -5,9 +5,11 @@ import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Wallet])],
+  imports: [
+    TypeOrmModule.forFeature([Wallet]) // <--- INDISPENSABLE pour que this.walletRepository ne soit pas undefined
+  ],
   controllers: [WalletController],
   providers: [WalletService],
-  exports: [WalletService, TypeOrmModule], // Exporter TypeOrmModule permet aux autres modules d'utiliser le repository Wallet si besoin
+  exports: [WalletService, TypeOrmModule],
 })
 export class WalletModule {}
