@@ -3,9 +3,9 @@ import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
 
 @Module({
-  imports: [], // Plus besoin de forFeature ici puisque DataSource est utilisé directement
+  imports: [],
   controllers: [WalletController],
   providers: [WalletService],
-  exports: [WalletService],
+  exports: [WalletService], // Assurez-vous que WalletService est bien défini et importé au dessus
 })
 export class WalletModule {}

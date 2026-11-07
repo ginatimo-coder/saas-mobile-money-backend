@@ -6,6 +6,6 @@ import { ComptabiliteService } from './comptabilite.service';
   imports: [],
   controllers: [ComptabiliteController],
   providers: [ComptabiliteService],
-  exports: [ComptabiliteService],
+  exports: [ComptabiliteService], // Assurez-vous que ComptabiliteService est bien importé au dessus
 })
 export class ComptabiliteModule {}
