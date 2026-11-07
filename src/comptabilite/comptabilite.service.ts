@@ -19,6 +19,11 @@ export class ComptabiliteService {
     return await this.comptabiliteRepository.find();
   }
 
+  // Alias pour correspondre exactement à l'appel dans le contrôleur (findAllEntries)
+  async findAllEntries(): Promise<ComptabiliteEntry[]> {
+    return await this.findAll();
+  }
+
   async findOne(id: string): Promise<ComptabiliteEntry> {
     const entry = await this.comptabiliteRepository.findOne({ where: { id } });
     if (!entry) {
