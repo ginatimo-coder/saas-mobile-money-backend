@@ -5,13 +5,15 @@ import { AppService } from './app.service';
 import { WalletModule } from './wallet/wallet.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ComptabiliteModule } from './comptabilite/comptabilite.module';
+import { join } from 'path';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      autoLoadEntities: true, // Chargement automatique par les modules enfants
+      // Chargement dynamique par chemin : élimine définitivement les erreurs 'undefined'
+      entities: [join(__dirname, '**/*.entity{.ts,.js}')],
       synchronize: true,
     }),
     WalletModule,
