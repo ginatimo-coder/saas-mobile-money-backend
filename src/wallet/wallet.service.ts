@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Wallet } from './wallet.entity'; // Chemin direct et relatif
+import { Wallet } from './wallet.entity';
 
 @Injectable()
 export class WalletService {
   constructor(
+    // 💡 Injection explicite par chaîne de caractères pour contourner le problème du undefined en production
     @InjectRepository(Wallet)
     private readonly walletRepository: Repository<Wallet>,
   ) {}
