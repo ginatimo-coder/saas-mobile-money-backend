@@ -5,16 +5,13 @@ import { AppService } from './app.service';
 import { WalletModule } from './wallet/wallet.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ComptabiliteModule } from './comptabilite/comptabilite.module';
-import { Wallet } from './wallet/wallet.entity';
-import { Transaction } from './transactions/transaction.entity';
-import { ComptabiliteEntry } from './comptabilite/comptabilite.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      entities: [Wallet, Transaction, ComptabiliteEntry],
+      autoLoadEntities: true, // Chargement automatique par les modules enfants
       synchronize: true,
     }),
     WalletModule,
