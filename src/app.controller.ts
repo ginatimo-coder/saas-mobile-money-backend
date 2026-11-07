@@ -1,27 +1,18 @@
 import { Controller, Get } from '@nestjs/common';
-<<<<<<< HEAD
-=======
 import { DataSource } from 'typeorm';
->>>>>>> f53be801812e677f221d1bae063d2bc525236fbf
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-<<<<<<< HEAD
-  constructor(private readonly appService: AppService) {}
-=======
   constructor(
     private readonly appService: AppService,
     private readonly dataSource: DataSource,
   ) {}
->>>>>>> f53be801812e677f221d1bae063d2bc525236fbf
 
   @Get()
   getHello(): string {
     return this.appService.getHello();
   }
-<<<<<<< HEAD
-=======
 
   @Get('check-db')
   async checkDatabase() {
@@ -39,5 +30,4 @@ export class AppController {
       };
     }
   }
->>>>>>> f53be801812e677f221d1bae063d2bc525236fbf
 }
