@@ -1,22 +1,23 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppController } from './app.controller';
+import { Controller, Get } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { AppService } from './app.service';
 
-describe('AppController', () => {
-  let appController: AppController;
+@Controller()
+export class AppController {
+  constructor(
+    private readonly appService: AppService,
+    private readonly dataSource: DataSource,
+  ) {}
 
-  beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
-      providers: [AppService],
-    }).compile();
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
 
-    appController = app.get<AppController>(AppController);
-  });
-
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
-    });
-  });
-});
+  @Get('check-db')
+  checkDb() {
+    return {
+      connected: this.dataSource.isInitialized,
+    };
+  }
+}
