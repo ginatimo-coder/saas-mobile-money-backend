@@ -10,26 +10,23 @@ export class WalletService {
     private readonly walletRepository: Repository<Wallet>,
   ) {}
 
-  // 1. Créer un portefeuille pour un utilisateur
-  async createWallet(userId: string): Promise<Wallet> {
+  async createWallet(): Promise<Wallet> {
     const wallet = this.walletRepository.create({
-      user: { id: userId } as any,
       balance: 0,
-      currency: 'XOF',
+      currency: 'CDF',
     });
     return await this.walletRepository.save(wallet);
   }
 
-  // 2. Trouver le portefeuille d'un utilisateur par son ID
-  async findByUserId(userId: string): Promise<Wallet> {
-    const wallet = await this.walletRepository.findOne({
-      where: { user: { id: userId } },
-    });
-
+  async findOne(id: string): Promise<Wallet> {
+    const wallet = await this.walletRepository.findOne({ where: { id } });
     if (!wallet) {
-      throw new NotFoundException(`Portefeuille introuvable pour l'utilisateur ${userId}`);
+      throw new NotFoundException("Portefeuille introuvable.");
     }
-
     return wallet;
+  }
+
+  async findAll(): Promise<Wallet[]> {
+    return await this.walletRepository.find();
   }
 }
