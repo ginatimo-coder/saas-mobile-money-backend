@@ -7,13 +7,12 @@ export class TransactionsService {
   private transactionRepository: Repository<Transaction>;
 
   constructor(private readonly dataSource: DataSource) {
-    // Récupération directe et sécurisée du repository via DataSource (zéro décorateur, zéro undefined)
     this.transactionRepository = this.dataSource.getRepository(Transaction);
   }
 
   async create(createTransactionDto: any): Promise<Transaction> {
     const transaction = this.transactionRepository.create(createTransactionDto);
-    return await this.transactionRepository.save(transaction);
+    return await this.transactionRepository.save(transaction as Transaction);
   }
 
   async findAll(): Promise<Transaction[]> {
